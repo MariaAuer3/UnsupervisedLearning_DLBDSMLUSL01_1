@@ -22,7 +22,7 @@ from datetime import datetime
 from collections import Counter
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
-from sklearn.decomposition import TruncatedSVD, LatentDirichletAllocation
+from sklearn.decomposition import TruncatedSVD, LatentDirichletAllocation, PCA
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.manifold import TSNE
 from sklearn.metrics import silhouette_score
@@ -486,9 +486,14 @@ class TextClusterAnalyser:
         t-SNE-Plot: Vor Clustering (grau) oder nach Clustering (farbig)
         Optimiert: Nutzt bereits berechnetes SVD-Result statt neue PCA mit .toarray()
         """
-        # from sklearn.decomposition import PCA # This import is already at the top
-        pca_for_tsne = PCA(n_components=15, random_state=42)
-        tsne_input = pca_for_tsne.fit_transform(self.tfidf_matrix.toarray())
+        if self.pca_result is None:
+            print("Fehler: Keine SVD-Result verfügbar. Führe zuerst Dimensionsreduktion durch.")
+            return
+            
+        # Verwende die ersten 15 Komponenten des SVD-Results für t-SNE
+        tsne_input = self.pca_result[:, :15]
+        print(f"t-SNE Input Shape: {tsne_input.shape} (aus SVD-Result)")
+        
         tsne = TSNE(n_components=2, random_state=42, perplexity=30)
         tsne_result = tsne.fit_transform(tsne_input)
         

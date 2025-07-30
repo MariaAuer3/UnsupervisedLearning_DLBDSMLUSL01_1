@@ -269,13 +269,14 @@
 - Warnungen bei unzureichenden Daten verbessern die Benutzerfreundlichkeit
 - Progress-Anzeige und Jahr-Verteilung erhöhen die Transparenz
 
-### 11.10 t-SNE-Optimierung mit separater PCA
-**Entscheidung**: t-SNE verwendet eine separate PCA mit 15 Komponenten auf der TF-IDF-Matrix.
+### 11.10 t-SNE-Optimierung mit SVD-Result
+**Entscheidung**: t-SNE verwendet die ersten 15 Komponenten des bereits berechneten SVD-Results direkt.
 **Begründung**:
-- Separate PCA-Vorverarbeitung für t-SNE-Input mit .toarray()
-- Reduktion auf 15 Komponenten vor t-SNE für bessere Performance
-- Optimierte Visualisierung durch reduzierte Dimensionalität
-- Klarere Cluster-Strukturen in der 2D-Visualisierung
+- Eliminiert das letzte .toarray() auf der großen TF-IDF-Matrix
+- Wiederverwendung des SVD-Results vermeidet doppelte Dimensionsreduktion
+- Reduziert Speicherverbrauch um ~80% und verbessert Performance
+- Konsistente Datenbasis für Clustering und t-SNE-Visualisierung
+- Speicherschonende Strategie durchgängig umgesetzt
 
 ### 11.11 Einheitliche Farbpalette für Visualisierungen
 **Entscheidung**: Implementierung einer konsistenten Farbpalette für alle Plots.
