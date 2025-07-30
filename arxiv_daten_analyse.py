@@ -28,11 +28,11 @@ from sklearn.manifold import TSNE
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils.extmath import randomized_svd
-from nltk.tokenize import RegexpTokenizer
 import warnings
 warnings.filterwarnings('ignore')
 
 # Umgebungsvariablen für bessere Performance auf Windows
+# (scikit-learn verwendet intern joblib für Parallelisierung)
 os.environ['JOBLIB_MULTIPROCESSING'] = '0'
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 os.environ['OMP_NUM_THREADS'] = '1'
@@ -47,13 +47,25 @@ def ensure_output_dir():
         os.makedirs(OUTPUT_DIR)
         print(f"Output-Ordner '{OUTPUT_DIR}' erstellt.")
 
-# Konsistente Farbpalette für alle Visualisierungen
-COLOR_PALETTE = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+# Konsistente Farbpalette für alle Visualisierungen (erweitert für 30 Features)
+COLOR_PALETTE = [
+    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+    '#a6cee3', '#fb9a99', '#fdbf6f', '#cab2d6', '#ffff99', '#b15928', '#fb8072', '#80b1d3', '#fdb462', '#b3de69',
+    '#fccde5', '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f', '#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00'
+]
 CLUSTER_COLORMAP = 'tab10'  # Für Cluster-Visualisierungen
 
 # Ersetze NLTK-Tokenisierung durch RegexpTokenizer
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 import re
+
+# Zentrale wissenschaftliche Stopword-Liste
+WISSENSCHAFTLICHE_STOPWORDS = {
+    'paper', 'study', 'research', 'analysis', 'method', 'approach',
+    'result', 'conclusion', 'introduction', 'abstract', 'section',
+    'figure', 'table', 'equation', 'theorem', 'lemma', 'proof',
+    'proposition', 'corollary', 'definition', 'example', 'algorithm'
+}
 
 def simple_tokenizer(text):
     # Entferne LaTeX, Sonderzeichen, Zahlen, etc.
@@ -62,14 +74,8 @@ def simple_tokenizer(text):
     text = re.sub(r'[^a-zA-Z ]', ' ', text)
     text = text.lower()
     tokens = re.findall(r'\b[a-z]{3,}\b', text)  # nur Wörter mit min. 3 Buchstaben
-    stopwords = set(ENGLISH_STOP_WORDS)
-    wissenschaftliche_stopwords = stopwords.union({
-        'paper', 'study', 'research', 'analysis', 'method', 'approach',
-        'result', 'conclusion', 'introduction', 'abstract', 'section',
-        'figure', 'table', 'equation', 'theorem', 'lemma', 'proof',
-        'proposition', 'corollary', 'definition', 'example', 'algorithm'
-    })
-    tokens = [t for t in tokens if t not in wissenschaftliche_stopwords]
+    stopwords = set(ENGLISH_STOP_WORDS).union(WISSENSCHAFTLICHE_STOPWORDS)
+    tokens = [t for t in tokens if t not in stopwords]
     return ' '.join(tokens)
 
 def sample_arxiv_json(path, n=10000, category_filter=None, year_filter=None, year_filter_min=None, year_filter_max=None, seed=42):
@@ -319,15 +325,6 @@ class TextClusterAnalyser:
             
             return text
         
-        # Erweiterte Stopwords für wissenschaftliche Texte
-        wissenschaftliche_stopwords = set(ENGLISH_STOP_WORDS)
-        wissenschaftliche_stopwords.update([
-            'paper', 'study', 'research', 'analysis', 'method', 'approach',
-            'result', 'conclusion', 'introduction', 'abstract', 'section',
-            'figure', 'table', 'equation', 'theorem', 'lemma', 'proof',
-            'proposition', 'corollary', 'definition', 'example', 'algorithm'
-        ])
-        
         # Anwendung der Vorverarbeitung
         print("Bereinige Titel...")
         self.data['title_clean'] = self.data['title'].apply(wissenschaftliche_text_bereinigung)
@@ -361,7 +358,7 @@ class TextClusterAnalyser:
             min_df=3,           # Mindestens 3 Dokumente
             max_df=0.9,         # Maximal 90% der Dokumente
             ngram_range=(1, 3), # Unigramme, Bigramme, Trigramme
-            stop_words='english'
+            stop_words=list(set(ENGLISH_STOP_WORDS).union(WISSENSCHAFTLICHE_STOPWORDS))
         )
         
         self.tfidf_matrix = self.vectorizer.fit_transform(self.data['combined_text'])
@@ -533,13 +530,14 @@ class TextClusterAnalyser:
                 kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
                 kmeans.fit(self.pca_result)
                 inertias.append(kmeans.inertia_)
-                silhouette_scores.append(silhouette_score(self.pca_result, kmeans.labels_))
+                # Performance-Optimierung: sample_size für große Datensätze
+                silhouette_scores.append(silhouette_score(self.pca_result, kmeans.labels_, sample_size=min(1000, len(self.pca_result))))
             optimal_k = k_range[np.argmax(silhouette_scores)]
             print(f"Optimale Anzahl Cluster (KMeans): {optimal_k}")
             final_model = KMeans(n_clusters=optimal_k, random_state=42, n_init=10)
             self.clusters = final_model.fit_predict(self.pca_result)
         elif method == 'agglomerative':
-            n_clusters = kwargs.get('n_clusters', 6)
+            n_clusters = kwargs.get('n_clusters', 7)  # Default: 7 Cluster (konsistent mit README)
             print(f"Starte AgglomerativeClustering mit n_clusters={n_clusters} ...")
             clusterer = AgglomerativeClustering(n_clusters=n_clusters)
             self.clusters = clusterer.fit_predict(self.pca_result)
@@ -592,7 +590,7 @@ class TextClusterAnalyser:
         # TF-IDF für detaillierte Wortanalyse
         print("Berechne TF-IDF für detaillierte Cluster-Analyse...")
         tfidf_analyzer = TfidfVectorizer(
-            max_features=1000,
+            max_features=2000,  # Konsistent mit Haupt-Feature-Engineering
             stop_words='english',
             ngram_range=(1, 2),
             min_df=2

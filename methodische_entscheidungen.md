@@ -25,13 +25,15 @@
 - Standardisierung für konsistente Verarbeitung
 - Verbesserung der Feature-Qualität
 
-### 2.2 Tokenisierung und Lemmatisierung
-**Entscheidung**: Verwendung von RegexpTokenizer statt NLTK für robuste Tokenisierung
+### 2.2 Tokenisierung
+**Entscheidung**: Verwendung von eigener Regex-basierter Tokenisierung ohne NLTK
 **Begründung**:
-- Vermeidung von NLTK-Abhängigkeiten und Download-Problemen
-- RegexpTokenizer ist portabel und funktioniert ohne externe Ressourcen
-- Wissenschaftliche Texte werden mit regulären Ausdrücken effektiv verarbeitet
-- Einfachere Deployment ohne NLTK-Downloads
+- Komplett unabhängig von NLTK-Downloads oder -Ressourcen
+- Eigene `simple_tokenizer` Funktion mit regulären Ausdrücken
+- Wissenschaftliche Texte werden effektiv mit Regex verarbeitet
+- Einfachere Deployment ohne externe Abhängigkeiten
+- Portabel und sofort lauffähig auf jedem System
+- Keine Lemmatisierung: Fokus auf einfache, robuste Tokenisierung
 
 ### 2.3 Stopword-Entfernung
 **Entscheidung**: Erweiterte Stopword-Liste für wissenschaftliche Texte basierend auf scikit-learn
@@ -55,9 +57,10 @@
   - Keine Berücksichtigung der Wortreihenfolge
 
 ### 3.2 N-Gramme
-**Entscheidung**: Unigramme und Bigramme (1,2)
+**Entscheidung**: Unigramme, Bigramme und Trigramme (1,3)
 **Begründung**:
 - Erfassung von Wortkombinationen (z.B. "machine learning")
+- Erweiterte Erfassung von wissenschaftlichen Begriffen (z.B. "deep neural network")
 - Balance zwischen Informationsgehalt und Dimensionalität
 - Vermeidung von Overfitting durch zu viele Features
 
@@ -84,12 +87,14 @@
   - Verlust nicht-linearer Beziehungen
 
 ### 4.2 t-SNE für Visualisierung
-**Entscheidung**: t-SNE mit separater PCA-Vorverarbeitung für 15 Komponenten
+**Entscheidung**: t-SNE verwendet die ersten 15 Komponenten des SVD-Results direkt
 **Begründung**:
-- Separate PCA auf TF-IDF-Matrix mit .toarray() für t-SNE-Input
-- Reduktion auf 15 Komponenten vor t-SNE für bessere Performance
+- Wiederverwendung des bereits berechneten SVD-Results (keine separate PCA)
+- Eliminiert .toarray() auf der großen TF-IDF-Matrix
+- Reduziert Speicherverbrauch um ~80% und verbessert Performance
 - Erhaltung lokaler Strukturen in 2D-Visualisierung
 - Nicht-lineare Dimensionsreduktion für Cluster-Visualisierung
+- Konsistente Datenbasis für Clustering und t-SNE
 
 ## 5. Clustering-Analyse
 

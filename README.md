@@ -17,24 +17,27 @@ Das Unternehmen möchte sich stärker in Richtung Forschung und akademische Zusa
 - Identifikation von Datenqualitätsproblemen
 
 ### 2. Textvorverarbeitung
-- **Textreinigung**: Entfernung von Sonderzeichen, Normalisierung
-- **Tokenisierung**: Aufspaltung in einzelne Wörter
-- **Lemmatisierung**: Reduktion auf Grundformen
-- **Stopword-Entfernung**: Entfernung häufiger, nicht aussagekräftiger Wörter
+- **Textreinigung**: Entfernung von LaTeX-Formeln, Sonderzeichen und Normalisierung
+- **Tokenisierung**: Regex-basierte Tokenisierung ohne NLTK-Abhängigkeiten
+- **Stopword-Entfernung**: Erweiterte Liste mit wissenschaftlichen Begriffen (paper, study, research, etc.)
+- **Feature-Engineering**: TF-IDF mit 2000 Features und N-Grammen (1,3)
 
 ### 3. Feature Engineering
-- **TF-IDF Vektorisierung**: Gewichtung von Wörtern basierend auf Häufigkeit und Wichtigkeit
-- **N-Gramme**: Berücksichtigung von Wortkombinationen (Unigramme und Bigramme)
-- **Feature-Selektion**: Reduktion auf die wichtigsten 1000 Features
+- **TF-IDF Vektorisierung**: Konvertierung von Text zu numerischen Features
+- **Feature-Anzahl**: 2000 Features für alle Analysen (Hauptanalyse und detaillierte Cluster-Analyse)
+- **N-Gramme**: Unigramme, Bigramme und Trigramme (1,3)
+- **Feature-Selektion**: Automatische Auswahl der wichtigsten Begriffe
 
 ### 4. Dimensionsreduktion
-- **PCA (Principal Component Analysis)**: Reduktion der Dimensionalität bei Beibehaltung von 95% der Varianz
-- **t-SNE**: 2D-Visualisierung für bessere Interpretierbarkeit
+- **TruncatedSVD**: Dimensionsreduktion für große sparse Matrizen (100 Komponenten ≈ 70% Varianz)
+- **t-SNE**: Nicht-lineare Dimensionsreduktion für Visualisierung (erste 15 SVD-Komponenten)
+- **Speichereffizienz**: Direkte Verarbeitung von TF-IDF-Matrizen ohne .toarray()
 
 ### 5. Clustering-Analyse
-- **K-Means Clustering**: Identifikation homogener Gruppen
-- **Optimierung**: Automatische Bestimmung der optimalen Cluster-Anzahl mittels Silhouette-Score
-- **Cluster-Charakterisierung**: Analyse der typischen Merkmale jedes Clusters
+- **K-Means**: Standard-Clustering-Algorithmus mit automatischer Silhouette-Score-Optimierung
+- **AgglomerativeClustering**: Empfohlener Algorithmus für die Fallstudie mit n_clusters=6 (Standard) oder 7 (empfohlen)
+- **Cluster-Labels**: Automatische Generierung sprechender Beschriftungen
+- **Validierung**: Manuelle Überprüfung und quantitative Bewertung
 
 ### 6. Topic Modeling
 - **LDA (Latent Dirichlet Allocation)**: Identifikation latenter Themen in den Dokumenten
@@ -68,7 +71,6 @@ UnsupervisedLearning/
 ├── Output/                             # Ausgabe-Ordner für alle Ergebnisse
 │   ├── *.png                           # Visualisierungen
 │   ├── *.json                          # JSON-Exporte
-│   └── *.csv                           # CSV-Ergebnisse
 ├── .gitignore                          # Git-Ignore-Datei
 └── arxiv-metadata-oai-snapshot.json    # arXiv-Datensatz (4,5 GB)
 ```
@@ -93,14 +95,12 @@ UnsupervisedLearning/
 - **`cluster_detaillierte_analyse.json`**: Detaillierte Cluster-Analyse mit Kernaussagen
 - **`arxiv_trends_ergebnisse.csv`**: Vollständige Ergebnisse als CSV
 
-### 🔍 Cluster-Analyse (7 Cluster)
-1. **Astrophysik & Kosmologie** (1.293 Artikel)
-2. **Quantenphysik & Theoretische Physik** (3.881 Artikel)
-3. **Mathematik & Algebra** (2.666 Artikel)
-4. **Schwarze Löcher & Gravitation** (206 Artikel)
-5. **Magnetismus & Spin-Physik** (488 Artikel)
-6. **Teilchenphysik & Dunkle Materie** (1.076 Artikel)
-7. **Quantenmechanik & Verschränkung** (390 Artikel)
+### 🔍 Cluster-Analyse
+- **6 Cluster** werden standardmäßig automatisch identifiziert
+- **7 Cluster** empfohlen für die Fallstudie (explizit angeben)
+- **Dynamische Labels** basierend auf Top-Wörtern jedes Clusters
+- **Cluster-Größen** variieren je nach Zufalls-Sampling
+- **Detaillierte Analyse** mit Kernaussagen für jeden Cluster
 
 ## Technische Details
 
@@ -108,31 +108,42 @@ UnsupervisedLearning/
 - **pandas**: Datenmanipulation und -analyse
 - **numpy**: Numerische Berechnungen
 - **scikit-learn**: Machine Learning Algorithmen
-- **nltk**: Natural Language Processing
 - **matplotlib/seaborn**: Visualisierung
 - **scipy**: Wissenschaftliche Berechnungen
+- **regex**: Textverarbeitung (ohne NLTK-Downloads)
 
 ### Algorithmen
-1. **TF-IDF Vectorizer**: Text-zu-Vektor-Konvertierung
-2. **PCA**: Dimensionsreduktion
-3. **t-SNE**: Nicht-lineare Dimensionsreduktion
-4. **K-Means**: Clustering-Algorithmus
-5. **LDA**: Topic Modeling
+1. **TF-IDF Vectorizer**: Text-zu-Vektor-Konvertierung mit 2000 Features
+2. **TruncatedSVD**: Dimensionsreduktion für große sparse Matrizen
+3. **t-SNE**: Nicht-lineare Dimensionsreduktion für Visualisierung
+4. **K-Means**: Standard-Clustering-Algorithmus mit Silhouette-Optimierung
+5. **AgglomerativeClustering**: Empfohlener Clustering-Algorithmus für Fallstudie
+6. **LDA**: Topic Modeling
 
 ### Parameter-Optimierung
-- **Silhouette-Score**: Automatische Bestimmung der optimalen Cluster-Anzahl für KMeans
-- **Festgelegte Cluster-Anzahl**: Bei AgglomerativeClustering wird n_clusters=7 verwendet
+- **K-Means**: Standard mit automatischer Silhouette-Score-Optimierung (2-10 Cluster)
+- **AgglomerativeClustering**: Empfohlen für Fallstudie mit n_clusters=6 (Standard) oder 7 (empfohlen)
 - **Manuelle Validierung**: Stichprobenartige Überprüfung der Cluster-Qualität
+
+### Verfügbare Clustering-Methoden
+```python
+# Standard (K-Means mit automatischer Optimierung):
+analysator.clustering_analyse(method='kmeans')
+
+# Empfohlen für Fallstudie (AgglomerativeClustering):
+analysator.clustering_analyse(method='agglomerative', n_clusters=7)
+
+# Alternative (AgglomerativeClustering mit 6 Clustern):
+analysator.clustering_analyse(method='agglomerative')
+```
 
 ## Ergebnisse und Interpretation
 
 ### Cluster-Charakterisierung
-Jeder identifizierte Cluster repräsentiert einen wissenschaftlichen Trend:
-- **Cluster 0**: Machine Learning und Deep Learning
-- **Cluster 1**: Data Science und Analytics
-- **Cluster 2**: Computer Science und Software Engineering
-- **Cluster 3**: Physics und Quantum Computing
-- **Cluster 4**: Mathematics und Optimization
+- **Automatische Identifikation** wissenschaftlicher Trends basierend auf TF-IDF-Analyse
+- **Dynamische Cluster-Labels** werden aus den Top-Wörtern jedes Clusters generiert
+- **Inhaltliche Profile** mit Kernaussagen für jeden identifizierten Cluster
+- **Zeitliche Entwicklung** der Cluster über die analysierten Jahre
 
 ### Empfehlungen für akademische Kooperationen
 Basierend auf der Cluster-Analyse werden spezifische Empfehlungen für potenzielle Kooperationsbereiche gegeben, die sich an den identifizierten Trends orientieren.
@@ -158,7 +169,8 @@ Basierend auf der Cluster-Analyse werden spezifische Empfehlungen für potenziel
 ### Validierung der Ergebnisse
 - **Silhouette-Score**: Quantitative Bewertung der Cluster-Qualität (nur für KMeans)
 - **Manuelle Überprüfung**: Stichprobenartige Kontrolle der Cluster-Zuordnungen
-- **Cluster-Label-Generierung**: Automatische Beschriftung basierend auf Top-Wörtern
+- **Automatische Cluster-Labels**: Sprechende Beschriftungen basierend auf Top-Wörtern
+- **Detaillierte Cluster-Analyse**: Kernaussagen und inhaltliche Profile für jeden Cluster
 
 ### Kritische Reflexion
 - **Methodenwahl**: Begründung der gewählten Algorithmen
