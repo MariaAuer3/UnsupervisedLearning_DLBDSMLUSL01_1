@@ -1,0 +1,12 @@
+pandas>=1.5.0
+numpy>=1.21.0
+matplotlib>=3.5.0
+seaborn>=0.11.0
+scikit-learn>=1.1.0
+scipy>=1.9.0
+# Optional für HTML-Reports und interaktive Visualisierung
+jinja2>=3.1.0
+plotly>=5.0.0
+altair>=4.2.0
+# Für erweiterte Visualisierung und Performance
+joblib>=1.1.0 

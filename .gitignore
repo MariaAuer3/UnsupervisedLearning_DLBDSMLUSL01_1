@@ -1,0 +1,13 @@
+# Große oder sensible Dateien ausschließen
+001-2025-0516_DLBDSMLUSL01_D_Course_Book.pdf
+arxiv-metadata-oai-snapshot.json
+Output/
+Aufgabe/
+
+
+
+
+# Typische Ignorierungen
+__pycache__/
+*.pyc
+*.ipynb_checkpoints/
