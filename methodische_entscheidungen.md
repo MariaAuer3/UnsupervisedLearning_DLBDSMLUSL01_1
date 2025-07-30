@@ -26,18 +26,20 @@
 - Verbesserung der Feature-Qualität
 
 ### 2.2 Tokenisierung und Lemmatisierung
-**Entscheidung**: Verwendung von NLTK für Tokenisierung und WordNetLemmatizer
+**Entscheidung**: Verwendung von RegexpTokenizer statt NLTK für robuste Tokenisierung
 **Begründung**:
-- Wissenschaftliche Texte enthalten komplexe Begriffe
-- Lemmatisierung reduziert Vokabular-Größe ohne Informationsverlust
-- Verbesserung der Generalisierung
+- Vermeidung von NLTK-Abhängigkeiten und Download-Problemen
+- RegexpTokenizer ist portabel und funktioniert ohne externe Ressourcen
+- Wissenschaftliche Texte werden mit regulären Ausdrücken effektiv verarbeitet
+- Einfachere Deployment ohne NLTK-Downloads
 
 ### 2.3 Stopword-Entfernung
-**Entscheidung**: Erweiterte Stopword-Liste für wissenschaftliche Texte
+**Entscheidung**: Erweiterte Stopword-Liste für wissenschaftliche Texte basierend auf scikit-learn
 **Begründung**:
-- Standard-Stopwords + wissenschaftliche Begriffe (paper, study, research, etc.)
+- Verwendung von ENGLISH_STOP_WORDS aus scikit-learn
+- Erweiterung um wissenschaftliche Begriffe (paper, study, research, etc.)
 - Fokus auf inhaltlich relevante Begriffe
-- Reduktion der Dimensionalität
+- Reduktion der Dimensionalität ohne externe Abhängigkeiten
 
 ## 3. Feature Engineering
 
@@ -60,52 +62,60 @@
 - Vermeidung von Overfitting durch zu viele Features
 
 ### 3.3 Feature-Selektion
-**Entscheidung**: Top 1000 Features basierend auf TF-IDF-Scores
+**Entscheidung**: Top 2000 Features basierend auf TF-IDF-Scores
 **Begründung**:
 - Reduktion der Dimensionalität für bessere Performance
 - Fokus auf die wichtigsten Begriffe
 - Vermeidung des Curse of Dimensionality
+- Balance zwischen Informationsgehalt und Recheneffizienz
 
 ## 4. Dimensionsreduktion
 
-### 4.1 PCA (Principal Component Analysis)
-**Entscheidung**: PCA mit 95% Varianz-Beibehaltung
+### 4.1 TruncatedSVD (Singular Value Decomposition)
+**Entscheidung**: TruncatedSVD statt PCA für große sparse TF-IDF-Matrizen
 **Begründung**:
 - **Vorteile**:
-  - Lineare Dimensionsreduktion
+  - Effiziente Verarbeitung großer sparse Matrizen ohne .toarray()
+  - Reduziert Speicherverbrauch um ~80%
+  - Direkte Anwendung auf TF-IDF-Matrix möglich
   - Beibehaltung der wichtigsten Varianz
-  - Interpretierbare Komponenten
 - **Nachteile**:
+  - Lineare Dimensionsreduktion
   - Verlust nicht-linearer Beziehungen
-  - Annahme linearer Korrelationen
 
 ### 4.2 t-SNE für Visualisierung
-**Entscheidung**: t-SNE für 2D-Visualisierung
+**Entscheidung**: t-SNE mit separater PCA-Vorverarbeitung für 15 Komponenten
 **Begründung**:
-- Erhaltung lokaler Strukturen
-- Bessere Visualisierung von Clustern
-- Nicht-lineare Dimensionsreduktion
+- Separate PCA auf TF-IDF-Matrix mit .toarray() für t-SNE-Input
+- Reduktion auf 15 Komponenten vor t-SNE für bessere Performance
+- Erhaltung lokaler Strukturen in 2D-Visualisierung
+- Nicht-lineare Dimensionsreduktion für Cluster-Visualisierung
 
 ## 5. Clustering-Analyse
 
-### 5.1 K-Means Clustering
-**Entscheidung**: K-Means als Haupt-Clustering-Algorithmus
+### 5.1 AgglomerativeClustering (Hauptansatz)
+**Entscheidung**: AgglomerativeClustering mit n_clusters=7 als Haupt-Clustering-Algorithmus
 **Begründung**:
 - **Vorteile**:
+  - Hierarchische Cluster-Struktur
+  - Robust gegenüber Ausreißern
+  - Keine Annahme kugelförmiger Cluster
+  - Für Textdaten oft besser geeignet als KMeans
+- **Nachteile**:
+  - Festgelegte Cluster-Anzahl (keine automatische Optimierung)
+  - Höhere Rechenkomplexität
+
+### 5.2 K-Means Clustering (Alternative)
+**Entscheidung**: K-Means mit Silhouette-Score-Optimierung als alternative Methode
+**Begründung**:
+- **Vorteile**:
+  - Automatische Optimierung der Cluster-Anzahl (2-10)
   - Skalierbarkeit für große Datensätze
   - Einfache Interpretation
   - Schnelle Ausführung
 - **Nachteile**:
   - Annahme kugelförmiger Cluster
   - Sensitivität gegenüber Initialisierung
-  - Festlegung der Cluster-Anzahl
-
-### 5.2 Cluster-Optimierung
-**Entscheidung**: Silhouette-Score für optimale Cluster-Anzahl
-**Begründung**:
-- Quantitative Bewertung der Cluster-Qualität
-- Berücksichtigung von Intra- und Inter-Cluster-Distanzen
-- Automatische Optimierung
 
 ### 5.3 Alternative Methoden (nicht gewählt)
 **DBSCAN**: 
@@ -259,13 +269,13 @@
 - Warnungen bei unzureichenden Daten verbessern die Benutzerfreundlichkeit
 - Progress-Anzeige und Jahr-Verteilung erhöhen die Transparenz
 
-### 11.10 t-SNE-Optimierung mit SVD-Result
-**Entscheidung**: Nutzung des bereits berechneten SVD-Results direkt für t-SNE statt neue PCA mit `.toarray()`.
+### 11.10 t-SNE-Optimierung mit separater PCA
+**Entscheidung**: t-SNE verwendet eine separate PCA mit 15 Komponenten auf der TF-IDF-Matrix.
 **Begründung**:
-- Eliminiert Speicherproblem durch `.toarray()` auf großen TF-IDF-Matrizen
-- Wiederverwendung des SVD-Results vermeidet doppelte Dimensionsreduktion
-- Reduziert Speicherverbrauch um ~80% und verbessert Performance
-- Konsistente Datenbasis für Clustering und t-SNE-Visualisierung
+- Separate PCA-Vorverarbeitung für t-SNE-Input mit .toarray()
+- Reduktion auf 15 Komponenten vor t-SNE für bessere Performance
+- Optimierte Visualisierung durch reduzierte Dimensionalität
+- Klarere Cluster-Strukturen in der 2D-Visualisierung
 
 ### 11.11 Einheitliche Farbpalette für Visualisierungen
 **Entscheidung**: Implementierung einer konsistenten Farbpalette für alle Plots.
