@@ -60,14 +60,19 @@ python wissenschaftliche_trends_analyse.py
 
 ```
 UnsupervisedLearning/
-├── wissenschaftliche_trends_analyse.py  # Hauptskript
-├── requirements.txt                     # Python-Abhängigkeiten
+├── arxiv_daten_analyse.py              # Hauptskript für arXiv-Analyse
+├── wissenschaftliche_trends_analyse.py # Alternative Analyse-Skript
+├── methodische_entscheidungen.md       # Dokumentation der methodischen Entscheidungen
+├── requirements.txt                    # Python-Abhängigkeiten
 ├── README.md                           # Diese Dokumentation
-├── wissenschaftliche_trends_ergebnisse.csv  # Ergebnisse (wird erstellt)
-├── *.png                               # Visualisierungen (werden erstellt)
-└── 001-2025-0516_DLBDSMLUSL01_D_Course_Book.pdf
+├── Output/                             # Ausgabe-Ordner für alle Ergebnisse
+│   ├── *.png                           # Visualisierungen
+│   ├── *.json                          # JSON-Exporte
+│   └── *.csv                           # CSV-Ergebnisse
+├── .gitignore                          # Git-Ignore-Datei
+└── arxiv-metadata-oai-snapshot.json    # arXiv-Datensatz (4,5 GB)
 ```
-**Hinweis:** Die Datei `arxiv-metadata-oai-snapshot.json` (4,4 GB) sowie interne IU-Unterlagen (z. B. Kursbuch) sind in `.gitignore` ausgeschlossen und werden nicht mitversioniert.
+**Hinweis:** Die Datei `arxiv-metadata-oai-snapshot.json` (4,4 GB) ist in `.gitignore` ausgeschlossen und wird nicht mitversioniert.
 
 
 
@@ -115,9 +120,9 @@ UnsupervisedLearning/
 5. **LDA**: Topic Modeling
 
 ### Parameter-Optimierung
-- **Silhouette-Score**: Automatische Bestimmung der optimalen Cluster-Anzahl
-- **Elbow-Methode**: Alternative Methode zur Cluster-Optimierung
-- **Cross-Validation**: Validierung der Ergebnisse
+- **Silhouette-Score**: Automatische Bestimmung der optimalen Cluster-Anzahl für KMeans
+- **Festgelegte Cluster-Anzahl**: Bei AgglomerativeClustering wird n_clusters=7 verwendet
+- **Manuelle Validierung**: Stichprobenartige Überprüfung der Cluster-Qualität
 
 ## Ergebnisse und Interpretation
 
@@ -151,9 +156,9 @@ Basierend auf der Cluster-Analyse werden spezifische Empfehlungen für potenziel
 ## Qualitätssicherung
 
 ### Validierung der Ergebnisse
-- **Silhouette-Score**: Quantitative Bewertung der Cluster-Qualität
+- **Silhouette-Score**: Quantitative Bewertung der Cluster-Qualität (nur für KMeans)
 - **Manuelle Überprüfung**: Stichprobenartige Kontrolle der Cluster-Zuordnungen
-- **Cross-Validation**: Validierung mit verschiedenen Datensubsets
+- **Cluster-Label-Generierung**: Automatische Beschriftung basierend auf Top-Wörtern
 
 ### Kritische Reflexion
 - **Methodenwahl**: Begründung der gewählten Algorithmen
